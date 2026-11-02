@@ -5,42 +5,51 @@ export default function Page(){
   const [prompt,setPrompt]=useState("cyber samurai in neo-tokyo rain, anime 3d,");
   const [gen,setGen]=useState(false);
   const [done,setDone]=useState(false);
-  const run=()=>{ setGen(true); setDone(false); setTimeout(()=>{setGen(false); setDone(true)},2000); }
+  const [credits,setCredits]=useState(3);
+  const [progress,setProgress]=useState(0);
+
+  const run=()=>{
+    if(credits<=0){ alert("Sin forjas! Upgrade PRO $7"); return; }
+    setGen(true); setDone(false); setProgress(0);
+    let p=0;
+    const it=setInterval(()=>{
+      p+=Math.random()*18;
+      if(p>=100){ p=100; clearInterval(it); setDone(true); setCredits(c=>c-1); setTimeout(()=>setGen(false),800); }
+      setProgress(Math.floor(p));
+    },350);
+  };
+
   return(
-  <div style={{minHeight:"100vh",background:"#0a0015",color:"white",padding:"24px",fontFamily:"system-ui"}}>
-    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"20px 0",borderBottom:"1px solid rgba(255,255,255,0.08)"}}>
-      <b>MORO FORGE v3.0 • ANIME 3D PRO • LIVE</b>
-      <button onClick={run} style={{background:"white",color:"black",borderRadius:"999px",padding:"10px 20px",fontWeight:900}}>GENERATE NOW →</button>
-    </div>
-    <h1 style={{fontSize:"72px",lineHeight:"0.9",fontWeight:900,marginTop:"40px",letterSpacing:"-3px"}}>
-      TEXT TO<br/>
-      <span style={{background:"linear-gradient(90deg,#e879f9,#22d3ee)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>ANIME 3D</span><br/>
-      UNIVERSE
-    </h1>
-    <p style={{opacity:0.6,marginTop:"20px",maxWidth:"500px",fontSize:"18px"}}>TikTok generator is dead. This is MORO FORGE v3.0 — generate stylized 3D anime characters, worlds & viral shorts in one prompt. Export 9:16 ready.</p>
-    
-    <div style={{marginTop:"32px",background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:"24px",padding:"16px",maxWidth:"600px"}}>
-      <textarea value={prompt} onChange={e=>setPrompt(e.target.value)} style={{width:"100%",background:"#140a24",border:"1px solid rgba(255,255,255,0.1)",borderRadius:"16px",minHeight:"90px",padding:"16px",color:"white"}} />
-      <button onClick={run} style={{width:"100%",marginTop:"12px",height:"56px",borderRadius:"999px",background:"white",color:"black",fontWeight:900,letterSpacing:"1px"}}>{gen?"FORGING 3D WORLD... ⚡":"GENERATE 3D →"}</button>
-      {done && <div style={{textAlign:"center",marginTop:"12px",color:"#4ade80",fontSize:"12px"}}>✓ 3D Anime Scene Generated! Ready for export ↓</div>}
-      <div style={{display:"flex",gap:"16px",marginTop:"16px",fontSize:"10px",opacity:0.4,letterSpacing:"1px"}}><span>• 60FPS REAL-TIME</span><span>• STYLIZED PBR</span><span>• 9:16 EXPORT</span></div>
-    </div>
+    <div style={{minHeight:"100vh",background:"#08080f",color:"white",padding:"20px",display:"flex",flexDirection:"column",alignItems:"center"}}>
+      <div style={{display:"flex",justifyContent:"space-between",width:"100%",maxWidth:"420px",fontSize:"10px",letterSpacing:"1px"}}>
+        <b>MORO FORGE v3.1 • ANIME 3D PRO • LIVE</b>
+        <button onClick={run} style={{background:"#8b5cf6",border:"none",padding:"6px 14px",borderRadius:"20px",color:"white",fontWeight:"900",fontSize:"11px"}}>GENERATE NOW</button>
+      </div>
 
-    <div style={{marginTop:"40px",background:"linear-gradient(135deg,#1a0a2e,#0f0f1a)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:"24px",padding:"40px",textAlign:"center",maxWidth:"600px"}}>
-      <div style={{fontSize:"80px"}}>🗼</div>
-      <div style={{fontSize:"10px",letterSpacing:"4px",opacity:0.4,marginTop:"20px"}}>ANIME 3D PREVIEW</div>
-      <div style={{fontWeight:900,fontSize:"24px",marginTop:"8px"}}>CYBER SAMURAI</div>
-      <div style={{opacity:0.5,fontSize:"12px",marginTop:"8px"}}>{prompt}</div>
-      <div style={{marginTop:"20px",display:"flex",justifyContent:"space-between",fontSize:"10px"}}><span style={{background:"black",padding:"6px 12px",borderRadius:"999px"}}>● REC • 60FPS</span><span style={{background:"white",color:"black",padding:"6px 12px",borderRadius:"999px",fontWeight:700}}>9:16 • 4K</span></div>
-    </div>
+      <h1 style={{fontSize:"52px",lineHeight:"0.9",textAlign:"center",marginTop:"40px",fontWeight:"900",maxWidth:"420px"}}>TEXT TO <br/><span style={{background:"linear-gradient(90deg,#8b5cf6,#22d3ee)",WebkitBackgroundClip:"text",color:"transparent"}}>ANIME 3D</span><br/>UNIVERSE</h1>
+      
+      <p style={{color:"#a1a1aa",textAlign:"center",fontSize:"14px",marginTop:"12px",maxWidth:"380px"}}>TikTok generator is dead. This is MORO FORGE v3.1 — stylized 3D anime in one prompt. Export 9:16 ready.</p>
 
-    <div style={{marginTop:"60px",display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:"16px",maxWidth:"900px"}}>
-      <div style={{background:"rgba(255,255,255,0.04)",padding:"20px",borderRadius:"16px"}}><div style={{color:"#e879f9",fontSize:"12px"}}>01</div><b>Text to 3D Anime</b><p style={{opacity:0.5,fontSize:"13px",marginTop:"8px"}}>One prompt → full stylized PBR character.</p></div>
-      <div style={{background:"rgba(255,255,255,0.04)",padding:"20px",borderRadius:"16px"}}><div style={{color:"#e879f9",fontSize:"12px"}}>02</div><b>Viral Shorts</b><p style={{opacity:0.5,fontSize:"13px",marginTop:"8px"}}>Auto camera, anime light, TikTok 9:16.</p></div>
-      <div style={{background:"rgba(255,255,255,0.04)",padding:"20px",borderRadius:"16px"}}><div style={{color:"#e879f9",fontSize:"12px"}}>03</div><b>Real-time</b><p style={{opacity:0.5,fontSize:"13px",marginTop:"8px"}}>WebGL + AI, no Blender. 10s gen.</p></div>
+      <div style={{width:"100%",maxWidth:"420px",marginTop:"28px"}}>
+        <div style={{background:"white",borderRadius:"16px",display:"flex",alignItems:"center",padding:"4px 14px"}}>
+          <span style={{fontSize:"20px"}}>🔍</span>
+          <input value={prompt} onChange={e=>setPrompt(e.target.value)} style={{width:"100%",border:"none",outline:"none",padding:"14px 10px",fontSize:"15px",color:"black"}} placeholder="cyber samurai..." />
+        </div>
+        <button onClick={run} style={{width:"100%",marginTop:"12px",background:"linear-gradient(90deg,#8b5cf6,#60a5fa)",border:"none",borderRadius:"16px",padding:"16px",fontWeight:"900",fontSize:"18px",color:"white"}}>{gen?`GENERATING... ${progress}%`:`GENERATE 3D ⬢`}</button>
+        <p style={{textAlign:"center",fontSize:"11px",color:"#71717a",marginTop:"8px"}}>{credits} forjas gratis restantes • Luego $7 USD ilimitado</p>
+      </div>
+
+      <div style={{width:"100%",maxWidth:"420px",marginTop:"28px"}}>
+        <div style={{display:"flex",justifyContent:"space-between",fontSize:"11px",color:"#71717a"}}><span>3D PREVIEW</span><span style={{color:"#22c55e"}}>● LIVE</span></div>
+        <div style={{marginTop:"8px",width:"100%",height:"280px",background:"#18181b",borderRadius:"16px",border:"1px solid #27272a",display:"flex",alignItems:"center",justifyContent:"center"}}>
+          {gen ? (
+            <div style={{width:"85%"}}>
+              <div style={{width:"100%",height:"8px",background:"#27272a",borderRadius:"20px",overflow:"hidden"}}><div style={{height:"100%",width:`${progress}%`,background:"linear-gradient(90deg,#8b5cf6,#60a5fa)",transition:"width 0.3s"}} /></div>
+              <p style={{textAlign:"center",fontSize:"12px",color:"#a1a1aa",marginTop:"10px"}}>Forging... {progress}% • {Math.max(0,28-Math.floor(progress/4))}s left</p>
+            </div>
+          ) : done ? <p style={{color:"#a1a1aa"}}>✅ Generado! {prompt}</p> : <p style={{color:"#52525b",fontSize:"13px"}}>Tu anime 3D aparecerá aquí</p>}
+        </div>
+      </div>
     </div>
-    
-    <div style={{marginTop:"80px",textAlign:"center",opacity:0.2,fontSize:"10px",letterSpacing:"3px"}}>© 2026 MORO FORGE • BUILT BY MORO • SAN FRANCISCO SOLANO</div>
-  </div>
   )
 }
