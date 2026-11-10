@@ -1,53 +1,113 @@
 "use client";
-import { useState } from "react";
+import { useState, useRef } from "react";
 
 export default function Home() {
-  const [prompt, setPrompt] = useState("Hombre argentino joven, pelo corto negro, campera negra, cyber samurai en Neo-Tokyo");
-  const [estilo, setEstilo] = useState("Anime 3D");
+  const [tema, setTema] = useState("Moro llega a Neo-Tokyo y pelea con un robot gigante");
+  const [imgs, setImgs] = useState<string[]>([]);
   const [gen, setGen] = useState(false);
-  const [img, setImg] = useState("");
-  const [done, setDone] = useState(false);
+  const [grabando, setGrabando] = useState(false);
+  const [videoUrl, setVideoUrl] = useState("");
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  const generar = () => {
-    setGen(true);
-    setDone(false);
-    const seed = Math.floor(Math.random() * 999999);
-    // TRUCO CALIDAD: retrato cerca + cara detallada + flux
-    const full = `Retrato close-up de ${prompt}, estilo ${estilo}, rostro perfecto, cara ultra detallada, ojos nítidos, piel realista, iluminación cinematográfica, fondo Neo-Tokyo borroso, alta calidad 8k, primer plano, solo rostro y hombros`;
-    const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(full)}?width=1024&height=1280&seed=${seed}&model=flux&enhance=true&nologo=true`;
-    const pre = new Image();
-    pre.onload = () => { setImg(url); setGen(false); setDone(true); };
-    pre.onerror = () => { setImg(url); setGen(false); setDone(true); };
-    pre.src = url;
+  const generarEscenas = async () => {
+    setGen(true); setVideoUrl(""); setImgs([]);
+    const escenas = [
+      `Retrato close-up de Moro, hombre argentino joven pelo corto negro campera negra, llegando a Neo-Tokyo de noche, luces neon, anime 3D, cara ultra detallada`,
+      `Moro mirando ciudad futurista Neo-Tokyo con rascacielos neon, plano cinematografico, anime 3D, alta calidad`,
+      `Moro cyber samurai peleando con robot gigante en Neo-Tokyo, accion, explosion, anime 3D, cinematografico`
+    ];
+    const urls: string[] = [];
+    for (let i = 0; i < 3; i++) {
+      const seed = Math.floor(Math.random() * 999999);
+      const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(escenas[i])}?width=720&height=1280&seed=${seed}&model=flux&enhance=true&nologo=true`;
+      // esperar que cargue
+      await new Promise((res) => { const im = new Image(); im.crossOrigin = "anonymous"; im.onload = res; im.onerror = res; im.src = url; });
+      urls.push(url);
+    }
+    setImgs(urls); setGen(false);
+  };
+
+  const crearShort = async () => {
+    if (!imgs.length) return;
+    setGrabando(true);
+    const canvas = canvasRef.current!;
+    canvas.width = 720; canvas.height = 1280;
+    const ctx = canvas.getContext("2d")!;
+    const loaded = await Promise.all(imgs.map(src => new Promise<HTMLImageElement>((res) => { const im = new Image(); im.crossOrigin = "anonymous"; im.src = src; im.onload = () => res(im); im.onerror = () => res(im); })));
+
+    const stream = (canvas as any).captureStream(30);
+    const rec = new MediaRecorder(stream, { mimeType: "video/webm;codecs=vp9" });
+    const chunks: any[] = [];
+    rec.ondataavailable = (e) => chunks.push(e.data);
+    rec.onstop = () => {
+      const blob = new Blob(chunks, { type: "video/webm" });
+      setVideoUrl(URL.createObjectURL(blob));
+      setGrabando(false);
+    };
+    rec.start();
+    const start = performance.now();
+    const DUR = 15000; // 15 seg short
+    const draw = () => {
+      const t = performance.now() - start;
+      if (t > DUR) { rec.stop(); return; }
+      const idx = Math.min(2, Math.floor(t / 5000));
+      const local = (t % 5000) / 5000; // 0-1 por escena
+      const img = loaded[idx];
+      // Efecto Ken Burns - zoom lento
+      const zoom = 1 + local * 0.15;
+      const w = 720 * zoom, h = 1280 * zoom;
+      ctx.fillStyle = "#000"; ctx.fillRect(0, 0, 720, 1280);
+      try { ctx.drawImage(img, (720 - w) / 2, (1280 - h) / 2, w, h); } catch {}
+      // Oscurecer abajo para texto
+      const grad = ctx.createLinearGradient(0, 800, 0, 1280);
+      grad.addColorStop(0, "rgba(0,0,0,0)"); grad.addColorStop(1, "rgba(0,0,0,0.85)");
+      ctx.fillStyle = grad; ctx.fillRect(0, 800, 720, 480);
+      // Titulo
+      ctx.fillStyle = "#fff"; ctx.font = "900 52px sans-serif"; ctx.textAlign = "center";
+      ctx.fillText("MORO FORGE", 360, 1080);
+      ctx.font = "700 28px sans-serif"; ctx.fillStyle = "#e879f9";
+      const titulo = idx === 0 ? "EP.1 - LLEGADA" : idx === 1 ? "NEO-TOKYO" : "LA PELEA";
+      ctx.fillText(titulo, 360, 1130);
+      ctx.font = "500 22px sans-serif"; ctx.fillStyle = "#fff";
+      ctx.fillText(tema.substring(0, 38), 360, 1170);
+      // Barra progreso
+      ctx.fillStyle = "#333"; ctx.fillRect(60, 1220, 600, 8);
+      ctx.fillStyle = "#e879f9"; ctx.fillRect(60, 1220, 600 * (t / DUR), 8);
+      requestAnimationFrame(draw);
+    };
+    draw();
   };
 
   return (
-    <main style={{ background: "#0a0015", color: "white", minHeight: "100vh", fontFamily: "sans-serif", padding: "20px" }}>
-      <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", maxWidth: 1000, margin: "0 auto" }}>
-        <h1 style={{ fontSize: 22, fontWeight: 900 }}>MORO <span style={{ color: "#e879f9" }}>FORGE</span> <span style={{ fontSize: 11, border: "1px solid #555", padding: "4px 8px", borderRadius: 999, color: "#aaa" }}>v3.1 • CARA HD</span></h1>
-        <button onClick={generar} style={{ background: "white", color: "black", border: "none", padding: "10px 18px", borderRadius: 999, fontWeight: 800 }}>GENERATE →</button>
-      </header>
-      <section style={{ maxWidth: 1000, margin: "30px auto", textAlign: "center" }}>
-        <h2 style={{ fontSize: 44, lineHeight: 1, fontWeight: 900 }}>TEXT TO<br /><span style={{ color: "#e879f9" }}>ANIME 3D</span><br />UNIVERSE</h2>
-        <p style={{ color: "#aaa", marginTop: 12 }}>Ahora en modo RETRATO HD - la cara se ve nítida.</p>
-        <div style={{ background: "#1a0a2e", border: "1px solid #333", borderRadius: 24, padding: 16, marginTop: 20, textAlign: "left" }}>
-          <label style={{ fontSize: 12, color: "#aaa" }}>TU PROMPT</label>
-          <textarea value={prompt} onChange={(e) => setPrompt(e.target.value)} style={{ width: "100%", background: "transparent", color: "white", border: "none", outline: "none", fontSize: 16, minHeight: 70, marginTop: 8 }} />
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", margin: "12px 0" }}>
-            {["Anime 3D", "Realista", "Comic", "Cyberpunk"].map((s) => (
-              <button key={s} onClick={() => setEstilo(s)} style={{ padding: "8px 14px", borderRadius: 999, border: estilo === s ? "2px solid white" : "1px solid #444", background: estilo === s ? "white" : "transparent", color: estilo === s ? "black" : "white", fontWeight: 700 }}>{s}</button>
-            ))}
-          </div>
-          <button onClick={generar} style={{ width: "100%", padding: 16, borderRadius: 999, background: "white", color: "black", border: "none", fontWeight: 900, fontSize: 15 }}>
-            {gen ? "GENERANDO CARA HD... ⚡ ESPERÁ 15 SEG" : "GENERATE 3D →"}
-          </button>
-          {done && <p style={{ textAlign: "center", color: "#4ade80", marginTop: 12 }}>✓ Foto HD generada!</p>}
+    <main style={{ background: "#0a0015", color: "white", minHeight: "100vh", fontFamily: "sans-serif", padding: 20 }}>
+      <h1 style={{ textAlign: "center", fontSize: 26, fontWeight: 900 }}>MORO <span style={{ color: "#e879f9" }}>FORGE</span> <span style={{ fontSize: 11, border: "1px solid #555", padding: "4px 8px", borderRadius: 999 }}>v4.0 • SHORTS</span></h1>
+      <p style={{ textAlign: "center", color: "#aaa" }}>Creador de Shorts para TikTok / YouTube / Reels</p>
+
+      <div style={{ maxWidth: 520, margin: "20px auto", background: "#1a0a2e", border: "1px solid #333", borderRadius: 24, padding: 16 }}>
+        <label style={{ fontSize: 12, color: "#aaa" }}>¿DE QUÉ ES TU SHORT?</label>
+        <textarea value={tema} onChange={(e) => setTema(e.target.value)} style={{ width: "100%", background: "transparent", color: "white", border: "none", outline: "none", fontSize: 16, minHeight: 60, marginTop: 8 }} />
+        <button onClick={generarEscenas} style={{ width: "100%", padding: 14, borderRadius: 999, background: "white", color: "black", border: "none", fontWeight: 900, marginTop: 8 }}>
+          {gen ? "GENERANDO 3 ESCENAS... ESPERÁ 30 SEG" : "1️⃣ GENERAR 3 ESCENAS →"}
+        </button>
+        <button onClick={crearShort} disabled={!imgs.length || grabando} style={{ width: "100%", padding: 14, borderRadius: 999, background: imgs.length ? "#e879f9" : "#333", color: "white", border: "none", fontWeight: 900, marginTop: 10 }}>
+          {grabando ? "GRABANDO SHORT... 15 SEG" : "2️⃣ CREAR VIDEO SHORT (15 SEG) →"}
+        </button>
+      </div>
+
+      <div style={{ maxWidth: 520, margin: "0 auto", display: "flex", gap: 10, overflowX: "auto" }}>
+        {imgs.map((s, i) => <img key={i} src={s} style={{ width: 150, borderRadius: 12, border: "2px solid #333" }} />)}
+      </div>
+
+      <canvas ref={canvasRef} style={{ display: "block", width: 280, margin: "20px auto", borderRadius: 16, border: "1px solid #333" }} />
+
+      {videoUrl && (
+        <div style={{ textAlign: "center" }}>
+          <video src={videoUrl} controls style={{ width: 280, borderRadius: 16 }} />
+          <br />
+          <a href={videoUrl} download="moro-short.webm" style={{ display: "inline-block", marginTop: 12, background: "white", color: "black", padding: "12px 24px", borderRadius: 999, fontWeight: 900, textDecoration: "none" }}>⬇ DESCARGAR SHORT</a>
+          <p style={{ color: "#aaa", fontSize: 13, marginTop: 8 }}>Subilo a TikTok / YouTube Shorts / Reels.<br />Si TikTok no acepta .webm, en el celu abrí el video y poné Compartir → TikTok.</p>
         </div>
-        <div style={{ background: "#111", border: "1px solid #333", borderRadius: 24, padding: 16, marginTop: 20, minHeight: 400, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-          {img ? (<><img src={img} alt="generado" style={{ width: "100%", maxWidth: 420, borderRadius: 16 }} /><a href={img} download="moro-forge.png" target="_blank" style={{ marginTop: 14, background: "white", color: "black", padding: "10px 20px", borderRadius: 999, fontWeight: 800, textDecoration: "none" }}>⬇ DESCARGAR FOTO HD</a></>) : (<><div style={{ fontSize: 80 }}>{gen ? "⚡" : "🗼"}</div><p style={{ fontWeight: 900, fontSize: 20 }}>{gen ? "GENERANDO..." : "ACÁ VA TU FOTO HD"}</p><p style={{ color: "#888", fontSize: 13 }}>{prompt}</p></>)}
-        </div>
-      </section>
-      <footer style={{ textAlign: "center", color: "#555", fontSize: 12, padding: 20 }}>© 2026 MORO FORGE • RETRATO HD</footer>
+      )}
     </main>
   );
 }
